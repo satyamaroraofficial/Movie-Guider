@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">Movie-Guider</string>
+    <string name="poster_iv_info">Poster Of The Movie</string>
+    <string name="popular">Popular</string>
+    <string name="highest_rated">Top Rated</string>
+    <string name="spinner">Sort By</string>
+    <string name="backdrop_iv_info">Backdrop of the movie</string>
+    <string name="no_reviews">Looks like no one bothered to write reviews for this movie! :-P</string>
+    <string name="search_title">Search</string>
+    <string name="reviews">REVIEWS</string>
+    <string name="cast">CAST</string>
+    <string name="cast_images">Cast Images</string>
+    <string name="about_me">About The Developer</string>
+    <string name="my_picture">This is Satyam Arora</string>
+    <string name="bapusaheb_patil">Satyam Arora</string>
+    <string name="about_me_detail">Hi! I am trying to become an Android Developer and loves mobile and web UX/UI Designs.\n\nI love coding apps and designing them.\n\nNot specifically in that order.\n\nSee more of my apps and my work here:</string>
+    <string name="voice_search">Voice Search</string>
 </resources>
