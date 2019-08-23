@@ -1,16 +1,20 @@
 package com.example.movie_guider.ui;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.view.View;
+import android.widget.Toast;
 
 import com.arlib.floatingsearchview.FloatingSearchView;
 import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
@@ -19,8 +23,12 @@ import com.example.movie_guider.adapters.MovieRecyclerViewAdapter;
 import com.example.movie_guider.model.MovieRecyclerView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.util.ArrayList;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
+import jp.wasabeef.recyclerview.adapters.ScaleInAnimationAdapter;
 
 public class MainActivity extends AppCompatActivity implements MovieRecyclerViewAdapter.ItemClickListener {
     private static final int VOICE_RECOGNITION_REQUEST_CODE = 13;
@@ -29,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
     @BindView(R.id.bottom_navigation)
     BottomNavigationView bottomNavigationView;
     MovieRecyclerView mRecyclerView;
+    private MovieRecyclerViewAdapter mAdapter;
     private Context mContext;
 
     @Override
@@ -36,6 +45,9 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
+
+        mContext = getApplicationContext();
 
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
             switch (item.getItemId()) {
@@ -108,6 +120,21 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Voice searching...");
         startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if(requestCode == VOICE_RECOGNITION_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if(matches != null) {
+                if(!matches.isEmpty()) {
+                    String query = matches.get(0);
+                    //TODO
+                    Toast.makeText(this, "Searching for " + query + "...", Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
