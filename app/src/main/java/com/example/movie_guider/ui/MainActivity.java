@@ -1,17 +1,121 @@
 package com.example.movie_guider.ui;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
+import android.view.View;
 
+import com.arlib.floatingsearchview.FloatingSearchView;
+import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
 import com.example.movie_guider.R;
 import com.example.movie_guider.adapters.MovieRecyclerViewAdapter;
+import com.example.movie_guider.model.MovieRecyclerView;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements MovieRecyclerViewAdapter.ItemClickListener {
+    private static final int VOICE_RECOGNITION_REQUEST_CODE = 13;
+    @BindView(R.id.search_view)
+    FloatingSearchView searchView;
+    @BindView(R.id.bottom_navigation)
+    BottomNavigationView bottomNavigationView;
+    MovieRecyclerView mRecyclerView;
+    private Context mContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
+
+        bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.action_popular:
+                    mRecyclerView.smoothScrollToPosition(0);
+                    //TODO
+                    break;
+                case R.id.action_rated:
+                    mRecyclerView.smoothScrollToPosition(0);
+                    //TODO
+                    break;
+                case R.id.action_upcoming:
+                    mRecyclerView.smoothScrollToPosition(0);
+                    //TODO
+                    break;
+                case R.id.action_now:
+                    mRecyclerView.smoothScrollToPosition(0);
+                    //TODO
+                    break;
+                case R.id.action_favorites:
+                    mRecyclerView.smoothScrollToPosition(0);
+                    //TODO
+                    break;
+                default:
+                    //TODO
+            }
+            return true;
+        });
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (dy > 0) { // Scrolled up
+                    bottomNavigationView.setVisibility(View.GONE);
+                } else {
+                    bottomNavigationView.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
+        searchView = findViewById(R.id.search_view);
+        searchView.setOnSearchListener(new FloatingSearchView.OnSearchListener() {
+            @Override
+            public void onSuggestionClicked(SearchSuggestion searchSuggestion) {
+
+            }
+
+            @Override
+            public void onSearchAction(String currentQuery) {
+                mRecyclerView.smoothScrollToPosition(0);
+                //TODO
+                searchView.clearQuery();
+            }
+        });
+        searchView.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.action_about_me:
+                    Intent intentToAboutMe = new Intent(MainActivity.this, AboutMeActivity.class);
+                    ActivityOptionsCompat options = ActivityOptionsCompat.makeCustomAnimation(this, android.R.anim.fade_in, android.R.anim.fade_out);
+                    startActivity(intentToAboutMe, options.toBundle());
+                    break;
+                case R.id.action_voice_search:
+                    startVoiceRecognition();
+            }
+        });
+    }
+
+    private void startVoiceRecognition() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Voice searching...");
+        startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (searchView.isSearchBarFocused()) {
+            searchView.clearQuery();
+        } else {
+            super.onBackPressed();
+        }
     }
 }

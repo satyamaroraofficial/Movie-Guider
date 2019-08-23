@@ -12,7 +12,7 @@
     <string name="cast_images">Cast Images</string>
     <string name="about_me">About The Developer</string>
     <string name="my_picture">This is Satyam Arora</string>
-    <string name="bapusaheb_patil">Satyam Arora</string>
+    <string name="satyam_arora">Satyam Arora</string>
     <string name="about_me_detail">Hi! I am trying to become an Android Developer and loves mobile and web UX/UI Designs.\n\nI love coding apps and designing them.\n\nNot specifically in that order.\n\nSee more of my apps and my work here:</string>
     <string name="voice_search">Voice Search</string>
 </resources>
