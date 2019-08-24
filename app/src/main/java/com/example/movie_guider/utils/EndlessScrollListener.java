@@ -9,18 +9,16 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 public abstract class EndlessScrollListener extends RecyclerView.OnScrollListener {
 
     RecyclerView.LayoutManager mLayoutManager;
-    /**
-     * The minimum amount of items to have below your current scroll position
-     * before loading more
-     */
+    // The minimum amount of items to have below your current scroll position
+    // before loading more.
     private int visibleThreshold = 5;
-    //The current offset index of data you have loaded
+    // The current offset index of data you have loaded
     private int currentPage = 1;
-    //The total number of items in the dataset after the last load
+    // The total number of items in the dataset after the last load
     private int previousTotalItemCount = 0;
-    //True if we are still waiting for the last set of data to load
-    private boolean isLoading  = true;
-    //Sets the starting page index
+    // True if we are still waiting for the last set of data to load.
+    private boolean isLoading = true;
+    // Sets the starting page index
     private int startingPageIndex = 0;
 
     public EndlessScrollListener(LinearLayoutManager layoutManager) {
@@ -29,49 +27,47 @@ public abstract class EndlessScrollListener extends RecyclerView.OnScrollListene
 
     public EndlessScrollListener(GridLayoutManager layoutManager) {
         this.mLayoutManager = layoutManager;
-        //TODO
+        visibleThreshold = visibleThreshold * layoutManager.getSpanCount();
     }
 
     public EndlessScrollListener(StaggeredGridLayoutManager layoutManager) {
         this.mLayoutManager = layoutManager;
-        //TODO
+        visibleThreshold = visibleThreshold * layoutManager.getSpanCount();
     }
 
     public int getLastVisibleItem(int[] lastVisibleItemPositions) {
         int maxSize = 0;
-        for(int i = 0; i < lastVisibleItemPositions.length; i++) {
-            if(i == 0) {
+        for (int i = 0; i < lastVisibleItemPositions.length; i++) {
+            if (i == 0) {
                 maxSize = lastVisibleItemPositions[i];
-            } else if(lastVisibleItemPositions[i] > maxSize) {
+            } else if (lastVisibleItemPositions[i] > maxSize) {
                 maxSize = lastVisibleItemPositions[i];
             }
         }
         return maxSize;
     }
 
-    /**
-     * This happens many times a second during a scroll, so be wary of the code you place here.
-     * We are given a few useful parameters to help us work out if we need to load some more data,
-     * but first we check if we are waiting for the previous load to finish.
-     */
+    // This happens many times a second during a scroll, so be wary of the code you place here.
+    // We are given a few useful parameters to help us work out if we need to load some more data,
+    // but first we check if we are waiting for the previous load to finish.
     @Override
-    public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+    public void onScrolled(RecyclerView view, int dx, int dy) {
         int lastVisibleItemPosition = 0;
         int totalItemCount = mLayoutManager.getItemCount();
 
-        if(mLayoutManager instanceof StaggeredGridLayoutManager) {
+        if (mLayoutManager instanceof StaggeredGridLayoutManager) {
             int[] lastVisibleItemPositions = ((StaggeredGridLayoutManager) mLayoutManager).findLastVisibleItemPositions(null);
-            //Get maximum elements within the list
+            // get maximum element within the list
             lastVisibleItemPosition = getLastVisibleItem(lastVisibleItemPositions);
-        } else if(mLayoutManager instanceof GridLayoutManager) {
-            lastVisibleItemPosition = ((GridLayoutManager)mLayoutManager).findLastVisibleItemPosition();
-        } else if(mLayoutManager instanceof LinearLayoutManager) {
-            lastVisibleItemPosition = ((LinearLayoutManager)mLayoutManager).findLastVisibleItemPosition();
+        } else if (mLayoutManager instanceof LinearLayoutManager) {
+            lastVisibleItemPosition = ((LinearLayoutManager) mLayoutManager).findLastVisibleItemPosition();
+        } else if (mLayoutManager instanceof GridLayoutManager) {
+            lastVisibleItemPosition = ((GridLayoutManager) mLayoutManager).findLastVisibleItemPosition();
         }
 
-        // If the total item count is zero and the previous is'nt, assume the
+        // If the total item count is zero and the previous isn't, assume the
         // list is invalidated and should be reset back to initial state
-        if(totalItemCount < previousTotalItemCount) {
+        if (totalItemCount < previousTotalItemCount) {
             this.currentPage = this.startingPageIndex;
             this.previousTotalItemCount = totalItemCount;
             if (totalItemCount == 0) {
@@ -81,7 +77,7 @@ public abstract class EndlessScrollListener extends RecyclerView.OnScrollListene
         // If it’s still loading, we check to see if the dataset count has
         // changed, if so we conclude it has finished loading and update the current page
         // number and total item count.
-        if(isLoading && (totalItemCount > previousTotalItemCount)) {
+        if (isLoading && (totalItemCount > previousTotalItemCount)) {
             isLoading = false;
             previousTotalItemCount = totalItemCount;
         }
@@ -90,20 +86,17 @@ public abstract class EndlessScrollListener extends RecyclerView.OnScrollListene
         // the visibleThreshold and need to reload more data.
         // If we do need to reload some more data, we execute onLoadMore to fetch the data.
         // threshold should reflect how many total columns there are too
-        if(!isLoading && (lastVisibleItemPosition + visibleThreshold) > totalItemCount) {
+        if (!isLoading && (lastVisibleItemPosition + visibleThreshold) > totalItemCount) {
             currentPage++;
             onLoadMore(currentPage, totalItemCount);
             isLoading = true;
         }
     }
 
-    //Defines the process for actually loading more data based on page
-    public abstract void onLoadMore(int page, int totalItemCount);
+    // Defines the process for actually loading more data based on page
+    public abstract void onLoadMore(int page, int totalItemsCount);
+
 }
-
-
-
-
 
 
 
