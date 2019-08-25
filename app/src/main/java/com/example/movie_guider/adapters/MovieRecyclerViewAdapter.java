@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.movie_guider.R;
+//import com.example.movie_guider.model.Movie;
 
 import java.util.ArrayList;
 
@@ -38,6 +39,8 @@ public class MovieRecyclerViewAdapter extends RecyclerView.Adapter<MovieRecycler
     public void onBindViewHolder(@NonNull MovieViewHolder holder, int position) {
         Movie theMovie = mMovieArrayList.get(position);
         //TODO
+        //        if(theMovie.getPosterByte() != null) {
+//        }
     }
 
     @Override

@@ -3,7 +3,6 @@ package com.example.movie_guider.ui;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
@@ -14,6 +13,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.arlib.floatingsearchview.FloatingSearchView;
@@ -144,5 +144,10 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    public void onItemClick(int position, ImageView posterImageView) {
+
     }
 }
