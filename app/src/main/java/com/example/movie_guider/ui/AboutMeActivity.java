@@ -30,9 +30,9 @@ public class AboutMeActivity extends AppCompatActivity {
             getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
         }
         toolbar.setTitle("");
-        setSupportActionBar(toolbar);
+//        setSupportActionBar(toolbar);   //app crashing because of this when clicking on about me activity
         (findViewById(R.id.play_iv)).setOnClickListener(v -> {
-            Uri uri = Uri.parse("https://play.google.com/store/apps/dev?id=7368032842071222295");
+            Uri uri = Uri.parse("https://play.google.com/");
             Intent intentToPlayStore = new Intent(Intent.ACTION_VIEW, uri);
             startActivity(intentToPlayStore);
         });

@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import jp.wasabeef.recyclerview.adapters.ScaleInAnimationAdapter;
 
 public class MainActivity extends AppCompatActivity implements MovieRecyclerViewAdapter.ItemClickListener {
     private static final int VOICE_RECOGNITION_REQUEST_CODE = 13;
@@ -36,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
     FloatingSearchView searchView;
     @BindView(R.id.bottom_navigation)
     BottomNavigationView bottomNavigationView;
+    @BindView(R.id.rv_movies)
     MovieRecyclerView mRecyclerView;
     private MovieRecyclerViewAdapter mAdapter;
     private Context mContext;
@@ -115,6 +115,11 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         });
     }
 
+    @Override
+    public void onItemClick(int position, ImageView posterImageView) {
+        //TODO
+    }
+
     private void startVoiceRecognition() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
@@ -146,8 +151,4 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         }
     }
 
-    @Override
-    public void onItemClick(int position, ImageView posterImageView) {
-
-    }
 }
