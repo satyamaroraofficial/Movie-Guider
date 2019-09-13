@@ -145,9 +145,3 @@ public class Movie implements Parcelable {
         dest.writeByteArray(this.posterBytes);
     }
 }
-
-
-
-
-
-

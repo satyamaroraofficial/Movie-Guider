@@ -1,7 +1,6 @@
 package com.example.movie_guider.adapters;
 
 import android.content.Context;
-import android.graphics.Movie;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,8 +9,11 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.example.movie_guider.R;
-//import com.example.movie_guider.model.Movie;
+import com.example.movie_guider.model.Movie;
+import com.example.movie_guider.network.RetrofitAPI;
 
 import java.util.ArrayList;
 
@@ -19,6 +21,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MovieRecyclerViewAdapter extends RecyclerView.Adapter<MovieRecyclerViewAdapter.MovieViewHolder> {
+
     private ArrayList<Movie> mMovieArrayList;
     private Context mContext;
     private ItemClickListener mClickListener;
@@ -38,18 +41,29 @@ public class MovieRecyclerViewAdapter extends RecyclerView.Adapter<MovieRecycler
     @Override
     public void onBindViewHolder(@NonNull MovieViewHolder holder, int position) {
         Movie theMovie = mMovieArrayList.get(position);
-        //TODO
-        //        if(theMovie.getPosterByte() != null) {
-//        }
+        if(theMovie.getPosterBytes() != null) {
+            Glide.with(mContext)
+                    .load(theMovie.getPosterBytes())
+                    .centerCrop()
+                    .error(R.drawable.tmdb_placeholder)
+                    .fallback(R.drawable.tmdb_placeholder)
+                    .transition(new DrawableTransitionOptions().crossFade())
+                    .into(holder.mPosterImageView);
+        } else {
+            Glide.with(mContext)
+                    .load(RetrofitAPI.POSTER_BASE_URL + theMovie.getPosterPath())
+                    .centerCrop()
+                    .error(R.drawable.tmdb_placeholder)
+                    .fallback(R.drawable.tmdb_placeholder)
+                    .transition(new DrawableTransitionOptions().crossFade())
+                    .into(holder.mPosterImageView);
+        }
     }
 
     @Override
     public int getItemCount() {
-        if(mMovieArrayList == null) {
-            return 0;
-        }else {
-            return mMovieArrayList.size();
-        }
+        if (mMovieArrayList == null) return 0;
+        else return mMovieArrayList.size();
     }
 
     public interface ItemClickListener {
@@ -68,7 +82,7 @@ public class MovieRecyclerViewAdapter extends RecyclerView.Adapter<MovieRecycler
 
         @Override
         public void onClick(View v) {
-            if(mClickListener != null) {
+            if (mClickListener != null) {
                 mClickListener.onItemClick(getAdapterPosition(), mPosterImageView);
             }
         }

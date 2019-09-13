@@ -19,9 +19,9 @@ android {
         }
     }
 
-//    buildTypes.each {
-//        it.buildConfigField 'String', 'TMDB_API_TOKEN', MyTheMovieDBApiToken
-//    }
+    buildTypes.each {
+        it.buildConfigField 'String', 'TMDB_API_TOKEN', MyTheMovieDBApiToken
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8

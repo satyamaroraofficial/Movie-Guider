@@ -5,13 +5,18 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
+import android.transition.Slide;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -19,18 +24,30 @@ import android.widget.Toast;
 
 import com.arlib.floatingsearchview.FloatingSearchView;
 import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
+import com.example.movie_guider.BuildConfig;
 import com.example.movie_guider.R;
 import com.example.movie_guider.adapters.MovieRecyclerViewAdapter;
+import com.example.movie_guider.model.Movie;
 import com.example.movie_guider.model.MovieRecyclerView;
+import com.example.movie_guider.model.TMDBResponse;
+import com.example.movie_guider.network.RetrofitAPI;
+import com.example.movie_guider.utils.NetworkUtils;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import org.aviran.cookiebar2.CookieBar;
 
 import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import jp.wasabeef.recyclerview.adapters.ScaleInAnimationAdapter;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 
 public class MainActivity extends AppCompatActivity implements MovieRecyclerViewAdapter.ItemClickListener {
+    private static final int SEARCH_TASK = 0, POPULAR_TASK = 1, TOP_RATED_TASK = 2, UPCOMING_TASK = 3, NOW_PLAYING_TASK = 4;
     private static final int VOICE_RECOGNITION_REQUEST_CODE = 13;
     @BindView(R.id.loading_indicator)
     ProgressBar mProgressBar;
@@ -41,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
     @BindView(R.id.rv_movies)
     MovieRecyclerView mRecyclerView;
     private MovieRecyclerViewAdapter mAdapter;
+    private ArrayList<Movie> movieArrayList = new ArrayList<>();
     private Context mContext;
 
     @Override
@@ -49,14 +67,39 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
-
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
+        }
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Slide slide = new Slide(Gravity.LEFT);
+            getWindow().setExitTransition(slide);
+        }
         mContext = getApplicationContext();
+        CookieBar.build(MainActivity.this)
+                .setLayoutGravity(Gravity.BOTTOM)
+                .setBackgroundColor(R.color.colorAccent)
+                .setTitleColor(R.color.colorPrimary)
+                .setTitle("App Developed By Satyam Arora")
+                .show();
+
+        //TODO REALM DATABASE
+
+        int columns = 2;
+        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
+            columns = 4;
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(mContext, columns);
+        mRecyclerView.setLayoutManager(gridLayoutManager);
+
+        mAdapter = new MovieRecyclerViewAdapter(mContext, movieArrayList, this);
+        mRecyclerView.setAdapter(new ScaleInAnimationAdapter(mAdapter));
+
+        fetchMovies(POPULAR_TASK, null);
 
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
             switch (item.getItemId()) {
                 case R.id.action_popular:
                     mRecyclerView.smoothScrollToPosition(0);
-                    //TODO
+                    fetchMovies(POPULAR_TASK, null);
                     break;
                 case R.id.action_rated:
                     mRecyclerView.smoothScrollToPosition(0);
@@ -95,13 +138,13 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         searchView.setOnSearchListener(new FloatingSearchView.OnSearchListener() {
             @Override
             public void onSuggestionClicked(SearchSuggestion searchSuggestion) {
-
+                //NOTHING
             }
 
             @Override
             public void onSearchAction(String currentQuery) {
                 mRecyclerView.smoothScrollToPosition(0);
-                //TODO
+                fetchMovies(SEARCH_TASK, currentQuery);
                 searchView.clearQuery();
             }
         });
@@ -121,6 +164,47 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
     private void fetchMovies(int taskId, String taskQuery) {
         mRecyclerView.setVisibility(View.INVISIBLE);
         mProgressBar.setVisibility(View.VISIBLE);
+        RetrofitAPI retrofitAPI = NetworkUtils.getCacheEnabledRetrofit(getApplicationContext()).create(RetrofitAPI.class);
+        Call<TMDBResponse> call;
+        switch (taskId) {
+            case SEARCH_TASK:
+                call = retrofitAPI.searchMovies(BuildConfig.TMDB_API_TOKEN, "en-US", 1, taskQuery);
+                break;
+            case POPULAR_TASK:
+                call = retrofitAPI.getMovies("popular", BuildConfig.TMDB_API_TOKEN, "en-US", 1);
+                break;
+            case TOP_RATED_TASK:
+                call = retrofitAPI.getMovies("top_rated", BuildConfig.TMDB_API_TOKEN, "en-US", 1);
+                break;
+            case UPCOMING_TASK:
+                call = retrofitAPI.getMovies("upcoming", BuildConfig.TMDB_API_TOKEN, "en-US", 1);
+                break;
+            case NOW_PLAYING_TASK:
+                call = retrofitAPI.getMovies("now_playing", BuildConfig.TMDB_API_TOKEN, "en-US", 1);
+                break;
+            default:
+                call = retrofitAPI.getMovies("popular", BuildConfig.TMDB_API_TOKEN, "en-US", 1);
+        }
+        call.enqueue(new Callback<TMDBResponse>() {
+            @Override
+            public void onResponse(Call<TMDBResponse> call, Response<TMDBResponse> response) {
+                TMDBResponse tmdbResponse = response.body();
+                movieArrayList.clear();
+                if(tmdbResponse != null) {
+                    movieArrayList.addAll(tmdbResponse.getResults());
+                    mAdapter.notifyDataSetChanged();
+                }
+                mRecyclerView.setVisibility(View.VISIBLE);
+                mProgressBar.setVisibility(View.INVISIBLE);
+            }
+
+            @Override
+            public void onFailure(Call<TMDBResponse> call, Throwable t) {
+                Toast.makeText(mContext, "Error!", Toast.LENGTH_LONG).show();
+                mRecyclerView.setVisibility(View.INVISIBLE);
+                mProgressBar.setVisibility(View.GONE);
+            }
+        });
     }
 
     @Override
@@ -137,10 +221,10 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if(requestCode == VOICE_RECOGNITION_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+        if (requestCode == VOICE_RECOGNITION_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-            if(matches != null) {
-                if(!matches.isEmpty()) {
+            if (matches != null) {
+                if (!matches.isEmpty()) {
                     String query = matches.get(0);
                     //TODO
                     Toast.makeText(this, "Searching for " + query + "...", Toast.LENGTH_LONG).show();
