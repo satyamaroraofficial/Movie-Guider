@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.arlib.floatingsearchview.FloatingSearchView;
@@ -31,6 +32,8 @@ import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements MovieRecyclerViewAdapter.ItemClickListener {
     private static final int VOICE_RECOGNITION_REQUEST_CODE = 13;
+    @BindView(R.id.loading_indicator)
+    ProgressBar mProgressBar;
     @BindView(R.id.search_view)
     FloatingSearchView searchView;
     @BindView(R.id.bottom_navigation)
@@ -113,6 +116,11 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
                     startVoiceRecognition();
             }
         });
+    }
+
+    private void fetchMovies(int taskId, String taskQuery) {
+        mRecyclerView.setVisibility(View.INVISIBLE);
+        mProgressBar.setVisibility(View.VISIBLE);
     }
 
     @Override
