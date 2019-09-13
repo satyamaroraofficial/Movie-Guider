@@ -103,22 +103,22 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
                     break;
                 case R.id.action_rated:
                     mRecyclerView.smoothScrollToPosition(0);
-                    //TODO
+                    fetchMovies(TOP_RATED_TASK, null);
                     break;
                 case R.id.action_upcoming:
                     mRecyclerView.smoothScrollToPosition(0);
-                    //TODO
+                    fetchMovies(UPCOMING_TASK, null);
                     break;
                 case R.id.action_now:
                     mRecyclerView.smoothScrollToPosition(0);
-                    //TODO
+                    fetchMovies(NOW_PLAYING_TASK, null);
                     break;
                 case R.id.action_favorites:
                     mRecyclerView.smoothScrollToPosition(0);
                     //TODO
                     break;
                 default:
-                    //TODO
+                    fetchMovies(POPULAR_TASK, null);
             }
             return true;
         });
@@ -207,9 +207,16 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         });
     }
 
+    //TODO fetching favourites
+
     @Override
     public void onItemClick(int position, ImageView posterImageView) {
-        //TODO
+        Movie movie;
+        movie = movieArrayList.get(position);
+        Intent startDetailsActivity = new Intent(MainActivity.this, DetailsActivity.class);
+        startDetailsActivity.putExtra("movie", movie);
+        ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(this, posterImageView, "posterTransition");
+        startActivity(startDetailsActivity, options.toBundle());
     }
 
     private void startVoiceRecognition() {
