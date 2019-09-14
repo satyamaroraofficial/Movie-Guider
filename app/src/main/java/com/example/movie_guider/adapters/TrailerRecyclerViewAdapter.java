@@ -22,6 +22,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class TrailerRecyclerViewAdapter extends RecyclerView.Adapter<TrailerRecyclerViewAdapter.TrailerViewHolder> {
+
     private ArrayList<String> mTrailerTitles, mTrailerPaths;
     private Context mContext;
     private ItemClickListener mCLickListener;
@@ -44,11 +45,11 @@ public class TrailerRecyclerViewAdapter extends RecyclerView.Adapter<TrailerRecy
     public void onBindViewHolder(@NonNull TrailerViewHolder holder, int position) {
         String title = mTrailerTitles.get(position);
         Typeface hammersmithOne = ResourcesCompat.getFont(mContext, R.font.hammersmith_one);
-        holder.trailerTitileTextView.setTypeface(hammersmithOne);
+        holder.trailerTitleTextView.setTypeface(hammersmithOne);
         if(title == null)
-            holder.trailerTitileTextView.setText("Why aren't you connected to the internet? Or maybe there are no trailers for this movie...");
+            holder.trailerTitleTextView.setText("Why aren't you connected to the internet? Or maybe there are no trailers for this movie...");
         else
-            holder.trailerTitileTextView.setText(title);
+            holder.trailerTitleTextView.setText(title);
 
         String thumbnailUrlStr = "https://img.youtube.com/vi/" + mTrailerPaths.get(position) + "/0.jpg";
         Glide.with(mContext)
@@ -72,7 +73,7 @@ public class TrailerRecyclerViewAdapter extends RecyclerView.Adapter<TrailerRecy
 
     public class TrailerViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         @BindView(R.id.trailer_title_tv)
-        TextView trailerTitileTextView;
+        TextView trailerTitleTextView;
         @BindView(R.id.trailer_thumbnail_iv)
         ImageView trailerThumbnailImageView;
 
