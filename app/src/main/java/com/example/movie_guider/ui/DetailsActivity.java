@@ -23,10 +23,14 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.example.movie_guider.BuildConfig;
 import com.example.movie_guider.R;
+import com.example.movie_guider.adapters.CastRecyclerViewAdapter;
 import com.example.movie_guider.adapters.MovieRecyclerViewAdapter;
 import com.example.movie_guider.adapters.TrailerRecyclerViewAdapter;
+import com.example.movie_guider.model.Cast;
+import com.example.movie_guider.model.Crew;
 import com.example.movie_guider.model.Movie;
 import com.example.movie_guider.model.MovieRecyclerView;
+import com.example.movie_guider.model.TMDBCreditsResponse;
 import com.example.movie_guider.model.TMDBDetailsResponse;
 import com.example.movie_guider.model.TMDBTrailerResponse;
 import com.example.movie_guider.model.Trailer;
@@ -198,6 +202,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
             (findViewById(R.id.reviews_label_tv)).setVisibility(View.GONE);
         } else {
             //TODO Add review, genres and similar movies
+            fetchCredits();
             fetchMoreDetails();
 
             mTrailerRecyclerView.setLayoutManager(new LinearLayoutManager(DetailsActivity.this, RecyclerView.HORIZONTAL, false));
@@ -248,6 +253,57 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                 break;
                 //TODO ADD case for review details type
         }
+    }
+
+    private void fetchCredits() {
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, RecyclerView.HORIZONTAL, false);
+        mCastRecyclerView.setLayoutManager(layoutManager);
+
+        final ArrayList<Cast> castArrayList = new ArrayList<>();
+        final CastRecyclerViewAdapter mCastAdapter = new CastRecyclerViewAdapter(this, castArrayList, actorName -> {
+            try{
+                Uri uri = Uri.parse("https:www.google.com/search?q=" + actorName + " movies");
+                Intent actorMoviesIntent = new Intent(Intent.ACTION_VIEW, uri);
+                startActivity(actorMoviesIntent);
+            }catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        mCastRecyclerView.setAdapter(new ScaleInAnimationAdapter(mCastAdapter));
+
+        RetrofitAPI retrofitAPI = NetworkUtils.getCacheEnabledRetrofit(getApplicationContext()).create(RetrofitAPI.class);
+        final Call<TMDBCreditsResponse> creditsResponseCall = retrofitAPI.getCredits(mMovie.getId(), BuildConfig.TMDB_API_TOKEN);
+        creditsResponseCall.enqueue(new Callback<TMDBCreditsResponse>() {
+            @Override
+            public void onResponse(Call<TMDBCreditsResponse> call, Response<TMDBCreditsResponse> response) {
+                TMDBCreditsResponse creditsResponse = response.body();
+
+                //Get cast info
+                castArrayList.clear();
+                if(creditsResponse != null && creditsResponse.getCast().size() != 0) {
+                    castArrayList.addAll(creditsResponse.getCast());
+                    mCastAdapter.notifyDataSetChanged();
+                } else {
+                    (findViewById(R.id.cast_label_tv)).setVisibility(View.GONE);
+                    mCastRecyclerView.setVisibility(View.GONE);
+                }
+
+                //GEt director info
+                if(creditsResponse != null) {
+                    for(Crew crew : creditsResponse.getCrew()) {
+                        if(crew.getJob().equals("Director")) {
+                            mDirectorTextView.setText(crew.getName());
+                            break;
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<TMDBCreditsResponse> call, Throwable t) {
+                //Nothing
+            }
+        });
     }
 
 
