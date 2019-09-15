@@ -7,6 +7,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.transition.Slide;
@@ -15,6 +17,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
@@ -24,6 +27,7 @@ import com.example.movie_guider.adapters.MovieRecyclerViewAdapter;
 import com.example.movie_guider.adapters.TrailerRecyclerViewAdapter;
 import com.example.movie_guider.model.Movie;
 import com.example.movie_guider.model.MovieRecyclerView;
+import com.example.movie_guider.model.TMDBDetailsResponse;
 import com.example.movie_guider.model.TMDBTrailerResponse;
 import com.example.movie_guider.model.Trailer;
 import com.example.movie_guider.network.RetrofitAPI;
@@ -113,7 +117,6 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_details);
         ButterKnife.bind(this);
-
         getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
@@ -138,12 +141,17 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                 mPosterImageView.setVisibility(View.VISIBLE);
         });
 
+
+        mRatingTextView.setText(mMovie.getRating()); //Setting rating
+        mTitleTextView.setText(mMovie.getTitle()); //Setting title
+        mPlotTextView.setText(mMovie.getPlot()); //Setting plot
+        //TODO Add favourite button method
+
         //Setting release date
         if(mMovie.getDate() != null && !mMovie.getDate().equals(""))
             mDateTextView.setText(pretiffyDate(mMovie.getDate()));
 
         //Loading backdrop images
-        mTitleTextView.setText(mMovie.getTitle());
         Glide.with(getApplicationContext())
                 .load(RetrofitAPI.BACKDROP_BASE_URL + mMovie.getBackdropPath())
                 .centerCrop()
@@ -172,31 +180,32 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                     .into(mPosterImageView);
         }
 
-//        if(NetworkUtils.hasNetwork(mContext)) {
-//            (findViewById(R.id.tagline_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.similar_label_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.cast_label_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.votes_label_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.votes_value_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.minutes_label_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.minutes_value_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.imdb_label_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.imdb_value_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.director_label_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.director_value_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.genres_label_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.trailers_hint_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.trailer_label_tv)).setVisibility(View.GONE);
-//            (findViewById(R.id.reviews_label_tv)).setVisibility(View.GONE);
-//        } else {
-//            //TODO
-//
-//            mTrailerRecyclerView.setLayoutManager(new LinearLayoutManager(DetailsActivity.this, RecyclerView.HORIZONTAL, false));
-//            mTrailerAdapter = new TrailerRecyclerViewAdapter(mContext, mTrailerTitles, mTrailerPaths, this);
-//            mTrailerRecyclerView.setAdapter(new ScaleInAnimationAdapter(mTrailerAdapter));
-//
-//            fetchDetails(mMovie.getId(), TRAILER_DETAILS_TYPE);
-//        }
+        if(!NetworkUtils.hasNetwork(mContext)) {
+            (findViewById(R.id.tagline_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.similar_label_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.cast_label_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.votes_label_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.votes_value_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.minutes_label_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.minutes_value_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.imdb_label_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.imdb_value_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.director_label_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.director_value_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.genres_label_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.trailers_hint_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.trailer_label_tv)).setVisibility(View.GONE);
+            (findViewById(R.id.reviews_label_tv)).setVisibility(View.GONE);
+        } else {
+            //TODO Add review, genres and similar movies
+            fetchMoreDetails();
+
+            mTrailerRecyclerView.setLayoutManager(new LinearLayoutManager(DetailsActivity.this, RecyclerView.HORIZONTAL, false));
+            mTrailerAdapter = new TrailerRecyclerViewAdapter(mContext, mTrailerTitles, mTrailerPaths, this);
+            mTrailerRecyclerView.setAdapter(new ScaleInAnimationAdapter(mTrailerAdapter));
+
+            fetchDetails(mMovie.getId(), TRAILER_DETAILS_TYPE);
+        }
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             startPostponedEnterTransition();
@@ -241,9 +250,58 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
         }
     }
 
+
+    private void fetchMoreDetails() {
+        RetrofitAPI retrofitAPI = NetworkUtils.getCacheEnabledRetrofit(getApplicationContext()).create(RetrofitAPI.class);
+        Call<TMDBDetailsResponse> detailsResponseCall = retrofitAPI.getDetails(mMovie.getId(), BuildConfig.TMDB_API_TOKEN, "en-US");
+        detailsResponseCall.enqueue(new Callback<TMDBDetailsResponse>() {
+            @Override
+            public void onResponse(Call<TMDBDetailsResponse> call, Response<TMDBDetailsResponse> response) {
+                final TMDBDetailsResponse tmdbDetailsResponse = response.body();
+                String tagline = null;
+                if(tmdbDetailsResponse != null) {
+                    tagline = tmdbDetailsResponse.getTagline();
+                }
+                if(tagline != null && !tagline.equals("")) {
+                    mTaglineTextView.setText(tagline);
+                } else {
+                    mTaglineTextView.setVisibility(View.GONE);
+                }
+                //TODO
+                mVotesTextView.setText(String.valueOf(tmdbDetailsResponse.getVoteCount()));
+                mMinutesTextView.setText(String.valueOf(tmdbDetailsResponse.getRuntime()));
+                mImdbButton.setOnClickListener(view -> {
+                    String imdbId = tmdbDetailsResponse.getImdbId();
+                    try{
+                        Uri uri;
+                        if(imdbId != null && !imdbId.equals(""))
+                            uri = Uri.parse("http://www.imdb.com/title/" + imdbId + "/");
+                        else {
+                            Toast.makeText(mContext, "Movie is'nt there on IMDB. Here is a Google search for it instead!", Toast.LENGTH_LONG).show();
+                            uri = Uri.parse("https://www.google.com/search?q=" + tmdbDetailsResponse.getTitle());
+                        }
+                        Intent imdbIntent = new Intent(Intent.ACTION_VIEW, uri);
+                        startActivity(imdbIntent);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+
+                //TODO ADD GENRES
+            }
+
+            @Override
+            public void onFailure(Call<TMDBDetailsResponse> call, Throwable t) {
+
+            }
+        });
+    }
+
     @Override
     public void onItemClick(String stringUrlTrailerClicked) {
-        //TODO open youtube on clicking item
+        Uri youtubeUri  = Uri.parse("https://www.youtube.com//watch?v=" + stringUrlTrailerClicked);
+        Intent openYouTube = new Intent(Intent.ACTION_VIEW, youtubeUri);
+        startActivity(openYouTube);
     }
 
     //Fetching release date
