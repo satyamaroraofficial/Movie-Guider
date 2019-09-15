@@ -3,6 +3,7 @@ package com.example.movie_guider.network;
 import com.example.movie_guider.model.TMDBCreditsResponse;
 import com.example.movie_guider.model.TMDBDetailsResponse;
 import com.example.movie_guider.model.TMDBResponse;
+import com.example.movie_guider.model.TMDBReviewResponse;
 import com.example.movie_guider.model.TMDBTrailerResponse;
 
 import retrofit2.Call;
@@ -27,14 +28,11 @@ public interface RetrofitAPI {
     @GET("search/movie")
     Call<TMDBResponse> searchMovies(@Query("api_key") String API_KEY, @Query("language") String LANGUAGE, @Query("page") int PAGE, @Query("query") String QUERY);
 
-
     @GET("movie/{movie_id}/videos")
     Call<TMDBTrailerResponse> getTrailers(@Path("movie_id") int MOVIE_ID, @Query("api_key") String API_KEY, @Query("language") String LANGUAGE);
 
-    //TODO
-
-//    @GET("movie/{movie_id}/reviews")
-//    Call<TMDBReviewResponse> getReviews(@Path("movie_id") int MOVIE_ID, @Query("api_key") String API_KEY, @Query("language") String LANGUAGE);
+    @GET("movie/{movie_id}/reviews")
+    Call<TMDBReviewResponse> getReviews(@Path("movie_id") int MOVIE_ID, @Query("api_key") String API_KEY, @Query("language") String LANGUAGE);
 
     @GET("movie/{movie_id}/credits")
     Call<TMDBCreditsResponse> getCredits(@Path("movie_id") int MOVIE_ID, @Query("api_key") String API_KEY);

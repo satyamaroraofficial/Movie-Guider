@@ -26,14 +26,17 @@ import com.example.movie_guider.R;
 import com.example.movie_guider.adapters.CastRecyclerViewAdapter;
 import com.example.movie_guider.adapters.GenresRecyclerViewAdapter;
 import com.example.movie_guider.adapters.MovieRecyclerViewAdapter;
+import com.example.movie_guider.adapters.ReviewRecyclerViewAdapter;
 import com.example.movie_guider.adapters.TrailerRecyclerViewAdapter;
 import com.example.movie_guider.model.Cast;
 import com.example.movie_guider.model.Crew;
 import com.example.movie_guider.model.GenresItem;
 import com.example.movie_guider.model.Movie;
 import com.example.movie_guider.model.MovieRecyclerView;
+import com.example.movie_guider.model.Review;
 import com.example.movie_guider.model.TMDBCreditsResponse;
 import com.example.movie_guider.model.TMDBDetailsResponse;
+import com.example.movie_guider.model.TMDBReviewResponse;
 import com.example.movie_guider.model.TMDBTrailerResponse;
 import com.example.movie_guider.model.Trailer;
 import com.example.movie_guider.network.RetrofitAPI;
@@ -56,7 +59,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class DetailsActivity extends AppCompatActivity implements TrailerRecyclerViewAdapter.ItemClickListener{
-    private static final int TRAILER_DETAILS_TYPE = 0;
+    private static final int TRAILER_DETAILS_TYPE = 0, REVIEW_DETAILS_TYPE = 1;
     Movie mMovie, tempMovie;
     @BindView(R.id.appbar)
     AppBarLayout appBarLayout;
@@ -109,12 +112,15 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
     private TrailerRecyclerViewAdapter mTrailerAdapter;
     private MovieRecyclerViewAdapter mSimilarMoviesAdapter;
     private GenresRecyclerViewAdapter mGenreAdapter;
+    private ReviewRecyclerViewAdapter mReviewAdapter;
 
     //TODO Add ArrayLists
     private ArrayList<String> mTrailerTitles = new ArrayList<>();
     private ArrayList<String> mTrailerPaths = new ArrayList<>();
     private ArrayList<GenresItem> mGenres = new ArrayList<>();
     private ArrayList<Movie> mSimilarMovies = new ArrayList<>();
+    private ArrayList<String> mReviewAuthors = new ArrayList<>();
+    private ArrayList<String> mReviewContents = new ArrayList<>();
     private Context mContext;
     private byte[] imageBytes;
     //TODO Add REALME DATA SOURCES
@@ -212,11 +218,16 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
             mTrailerAdapter = new TrailerRecyclerViewAdapter(mContext, mTrailerTitles, mTrailerPaths, this);
             mTrailerRecyclerView.setAdapter(new ScaleInAnimationAdapter(mTrailerAdapter));
 
+            mReviewRecyclerView.setLayoutManager(new LinearLayoutManager(DetailsActivity.this, RecyclerView.VERTICAL, false));
+            mReviewAdapter = new ReviewRecyclerViewAdapter(mContext, mReviewAuthors, mReviewContents);
+            mReviewRecyclerView.setAdapter(mReviewAdapter);
+
             mGenresRecyclerView.setLayoutManager(new LinearLayoutManager(DetailsActivity.this, RecyclerView.HORIZONTAL, false));
             mGenreAdapter = new GenresRecyclerViewAdapter(mContext, mGenres);
             mGenresRecyclerView.setAdapter(new ScaleInAnimationAdapter(mGenreAdapter));
 
             fetchDetails(mMovie.getId(), TRAILER_DETAILS_TYPE);
+            fetchDetails(mMovie.getId(), REVIEW_DETAILS_TYPE);
         }
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -258,7 +269,35 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                     }
                 });
                 break;
-                //TODO ADD case for review details type
+
+                //TODO
+            case REVIEW_DETAILS_TYPE:
+                mReviewsLabel0.setVisibility(View.GONE);
+                mReviewRecyclerView.setVisibility(View.GONE);
+                Call<TMDBReviewResponse> reviewResponseCall = retrofitAPI.getReviews(movieId, BuildConfig.TMDB_API_TOKEN, "en-US");
+                reviewResponseCall.enqueue(new Callback<TMDBReviewResponse>() {
+                    @Override
+                    public void onResponse(Call<TMDBReviewResponse> call, Response<TMDBReviewResponse> response) {
+                        TMDBReviewResponse tmdbReviewResponse = response.body();
+                        if(tmdbReviewResponse != null && tmdbReviewResponse.getResults().size() != 0) {
+                            mReviewAuthors.clear();
+                            mReviewContents.clear();
+                            for(Review review : tmdbReviewResponse.getResults()) {
+                                mReviewAuthors.add(review.getAuthor());
+                                mReviewContents.add(review.getContent());
+                            }
+                            mReviewAdapter.notifyDataSetChanged();
+                            mReviewRecyclerView.setVisibility(View.VISIBLE);
+                            mReviewsLabel0.setVisibility(View.VISIBLE);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<TMDBReviewResponse> call, Throwable t) {
+
+                    }
+                });
+                break;
         }
     }
 
