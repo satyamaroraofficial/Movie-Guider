@@ -20,12 +20,12 @@ import java.util.ArrayList;
 public class CastRecyclerViewAdapter extends RecyclerView.Adapter<CastRecyclerViewAdapter.CastViewHolder> {
     private ArrayList<Cast> mCastList;
     private Context mContext;
-    private OnActorClickHandler mOnActorClickHandler;
+    private OnActorClickHandler mActorClickHandler;
 
     public CastRecyclerViewAdapter(Context context, ArrayList<Cast> cast, OnActorClickHandler onActorClickHandler) {
         this.mContext = context;
         this.mCastList = cast;
-        this.mOnActorClickHandler = onActorClickHandler;
+        this.mActorClickHandler = onActorClickHandler;
     }
 
     @NonNull
@@ -37,7 +37,7 @@ public class CastRecyclerViewAdapter extends RecyclerView.Adapter<CastRecyclerVi
 
     @Override
     public void onBindViewHolder(@NonNull CastViewHolder holder, int position) {
-//        holder.mCastTextView.setText(mCastList.get(position).getName());
+        holder.mCastTextView.setText(mCastList.get(position).getName());
         Glide.with(mContext)
                 .load(RetrofitAPI.POSTER_BASE_URL + mCastList.get(position).getProfilePath())
                 .into(holder.mCastImageView);
@@ -49,7 +49,7 @@ public class CastRecyclerViewAdapter extends RecyclerView.Adapter<CastRecyclerVi
     }
 
     public interface OnActorClickHandler {
-        void onActorClickHandler(String actorName);
+        void onActorClicked(String actorName);
     }
 
     public class CastViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -58,14 +58,14 @@ public class CastRecyclerViewAdapter extends RecyclerView.Adapter<CastRecyclerVi
 
         public CastViewHolder(@NonNull View itemView) {
             super(itemView);
-            mCastTextView = itemView.findViewById(R.id.cast_rv);
+            mCastTextView = itemView.findViewById(R.id.cast_tv);
             mCastImageView = itemView.findViewById(R.id.cast_iv);
             itemView.setOnClickListener(this);
         }
 
         @Override
         public void onClick(View v) {
-            mOnActorClickHandler.onActorClickHandler(mCastTextView.getText().toString());
+            mActorClickHandler.onActorClicked(mCastTextView.getText().toString());
         }
     }
 }

@@ -32,8 +32,8 @@ public class TMDBDetailsResponse implements Parcelable {
     private String backdropPath;
     @SerializedName("revenue")
     private int revenue;
-//    @SerializedName("genres")
-//    private List<GenresItem> genres;
+    @SerializedName("genres")
+    private List<GenresItem> genres;
     @SerializedName("popularity")
     private double popularity;
     @SerializedName("id")
@@ -63,10 +63,9 @@ public class TMDBDetailsResponse implements Parcelable {
     @SerializedName("status")
     private String status;
 
-    public TMDBDetailsResponse() {
-    }
+    public TMDBDetailsResponse() { }
 
-    public TMDBDetailsResponse(String originalLanguage, String imdbId, boolean video, String title, String backdropPath, int revenue, double popularity, int id, int voteCount, int budget, String overview, String originalTitle, int runtime, String posterPath, String releaseDate, double voteAverage, String tagline, boolean adult, String homepage, String status) {
+    public TMDBDetailsResponse(String originalLanguage, String imdbId, boolean video, String title, String backdropPath, int revenue, List<GenresItem> genres, double popularity, int id, int voteCount, int budget, String overview, String originalTitle, int runtime, String posterPath, String releaseDate, double voteAverage, String tagline, boolean adult, String homepage, String status) {
         this.originalLanguage = originalLanguage;
         this.imdbId = imdbId;
         this.video = video;
@@ -74,7 +73,7 @@ public class TMDBDetailsResponse implements Parcelable {
 
         this.backdropPath = backdropPath;
         this.revenue = revenue;
-//        this.genres = genres;
+        this.genres = genres;
         this.popularity = popularity;
         this.id = id;
         this.voteCount = voteCount;
@@ -98,7 +97,7 @@ public class TMDBDetailsResponse implements Parcelable {
         this.title = in.readString();
         this.backdropPath = in.readString();
         this.revenue = in.readInt();
-//        this.genres = in.createTypedArrayList(GenresItem.CREATOR);
+        this.genres = in.createTypedArrayList(GenresItem.CREATOR);
         this.popularity = in.readDouble();
         this.id = in.readInt();
         this.voteCount = in.readInt();
@@ -163,13 +162,13 @@ public class TMDBDetailsResponse implements Parcelable {
         this.revenue = revenue;
     }
 
-//    public List<GenresItem> getGenres() {
-//        return genres;
-//    }
-//
-//    public void setGenres(List<GenresItem> genres) {
-//        this.genres = genres;
-//    }
+    public List<GenresItem> getGenres() {
+        return genres;
+    }
+
+    public void setGenres(List<GenresItem> genres) {
+        this.genres = genres;
+    }
 
     public double getPopularity() {
         return popularity;
@@ -296,7 +295,7 @@ public class TMDBDetailsResponse implements Parcelable {
         dest.writeString(this.title);
         dest.writeString(this.backdropPath);
         dest.writeInt(this.revenue);
-//        dest.writeTypedList(this.genres);
+        dest.writeTypedList(this.genres);
         dest.writeDouble(this.popularity);
         dest.writeInt(this.id);
         dest.writeInt(this.voteCount);

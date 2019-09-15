@@ -24,10 +24,12 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.example.movie_guider.BuildConfig;
 import com.example.movie_guider.R;
 import com.example.movie_guider.adapters.CastRecyclerViewAdapter;
+import com.example.movie_guider.adapters.GenresRecyclerViewAdapter;
 import com.example.movie_guider.adapters.MovieRecyclerViewAdapter;
 import com.example.movie_guider.adapters.TrailerRecyclerViewAdapter;
 import com.example.movie_guider.model.Cast;
 import com.example.movie_guider.model.Crew;
+import com.example.movie_guider.model.GenresItem;
 import com.example.movie_guider.model.Movie;
 import com.example.movie_guider.model.MovieRecyclerView;
 import com.example.movie_guider.model.TMDBCreditsResponse;
@@ -106,12 +108,13 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
     //TODO Add Adapters
     private TrailerRecyclerViewAdapter mTrailerAdapter;
     private MovieRecyclerViewAdapter mSimilarMoviesAdapter;
+    private GenresRecyclerViewAdapter mGenreAdapter;
 
     //TODO Add ArrayLists
     private ArrayList<String> mTrailerTitles = new ArrayList<>();
     private ArrayList<String> mTrailerPaths = new ArrayList<>();
+    private ArrayList<GenresItem> mGenres = new ArrayList<>();
     private ArrayList<Movie> mSimilarMovies = new ArrayList<>();
-
     private Context mContext;
     private byte[] imageBytes;
     //TODO Add REALME DATA SOURCES
@@ -153,7 +156,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
 
         //Setting release date
         if(mMovie.getDate() != null && !mMovie.getDate().equals(""))
-            mDateTextView.setText(pretiffyDate(mMovie.getDate()));
+            mDateTextView.setText(prettifyDate(mMovie.getDate()));
 
         //Loading backdrop images
         Glide.with(getApplicationContext())
@@ -208,6 +211,10 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
             mTrailerRecyclerView.setLayoutManager(new LinearLayoutManager(DetailsActivity.this, RecyclerView.HORIZONTAL, false));
             mTrailerAdapter = new TrailerRecyclerViewAdapter(mContext, mTrailerTitles, mTrailerPaths, this);
             mTrailerRecyclerView.setAdapter(new ScaleInAnimationAdapter(mTrailerAdapter));
+
+            mGenresRecyclerView.setLayoutManager(new LinearLayoutManager(DetailsActivity.this, RecyclerView.HORIZONTAL, false));
+            mGenreAdapter = new GenresRecyclerViewAdapter(mContext, mGenres);
+            mGenresRecyclerView.setAdapter(new ScaleInAnimationAdapter(mGenreAdapter));
 
             fetchDetails(mMovie.getId(), TRAILER_DETAILS_TYPE);
         }
@@ -343,12 +350,20 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                     }
                 });
 
-                //TODO ADD GENRES
+                //Fetching GENRES details
+                if(tmdbDetailsResponse.getGenres() != null && tmdbDetailsResponse.getGenres().size() != 0) {
+                    mGenres.clear();
+                    mGenres.addAll(tmdbDetailsResponse.getGenres());
+                    mGenreAdapter.notifyDataSetChanged();
+                } else {
+                    (findViewById(R.id.genres_label_tv)).setVisibility(View.GONE);
+                    mGenresRecyclerView.setVisibility(View.GONE);
+                }
             }
 
             @Override
             public void onFailure(Call<TMDBDetailsResponse> call, Throwable t) {
-
+                //Nothing
             }
         });
     }
@@ -361,7 +376,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
     }
 
     //Fetching release date
-    private String pretiffyDate(String jsonDate) {
+    private String prettifyDate(String jsonDate) {
         DateFormat sourceDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date date = null;
         try{
@@ -369,7 +384,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        DateFormat destDateFormat = new SimpleDateFormat("MM dd\nyyyy");
+        DateFormat destDateFormat = new SimpleDateFormat("MMM dd\nyyyy");
         String dateStr = destDateFormat.format(date);
         return dateStr;
     }
