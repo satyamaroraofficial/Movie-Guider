@@ -36,6 +36,7 @@ import com.example.movie_guider.model.MovieRecyclerView;
 import com.example.movie_guider.model.Review;
 import com.example.movie_guider.model.TMDBCreditsResponse;
 import com.example.movie_guider.model.TMDBDetailsResponse;
+import com.example.movie_guider.model.TMDBResponse;
 import com.example.movie_guider.model.TMDBReviewResponse;
 import com.example.movie_guider.model.TMDBTrailerResponse;
 import com.example.movie_guider.model.Trailer;
@@ -44,6 +45,8 @@ import com.example.movie_guider.utils.NetworkUtils;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import org.aviran.cookiebar2.CookieBar;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -58,7 +61,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class DetailsActivity extends AppCompatActivity implements TrailerRecyclerViewAdapter.ItemClickListener{
+public class DetailsActivity extends AppCompatActivity implements TrailerRecyclerViewAdapter.ItemClickListener {
     private static final int TRAILER_DETAILS_TYPE = 0, REVIEW_DETAILS_TYPE = 1;
     Movie mMovie, tempMovie;
     @BindView(R.id.appbar)
@@ -131,11 +134,11 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
         setContentView(R.layout.activity_details);
         ButterKnife.bind(this);
         getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
         }
         mContext = getApplicationContext();
-        if(Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= 21) {
             Slide slide = new Slide(Gravity.BOTTOM);
             getWindow().setEnterTransition(slide);
             postponeEnterTransition();
@@ -148,7 +151,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
         collapsingToolbarLayout.setExpandedTitleColor(getResources().getColor(android.R.color.black));
         collapsingToolbarLayout.setCollapsedTitleTextColor(getResources().getColor(android.R.color.black));
         appBarLayout.addOnOffsetChangedListener((appBarLayout, verticalOffSet) -> {
-            if(Math.abs(verticalOffSet) - appBarLayout.getTotalScrollRange() == 0)
+            if (Math.abs(verticalOffSet) - appBarLayout.getTotalScrollRange() == 0)
                 mPosterImageView.setVisibility(View.GONE);
             else
                 mPosterImageView.setVisibility(View.VISIBLE);
@@ -161,7 +164,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
         //TODO Add favourite button method
 
         //Setting release date
-        if(mMovie.getDate() != null && !mMovie.getDate().equals(""))
+        if (mMovie.getDate() != null && !mMovie.getDate().equals(""))
             mDateTextView.setText(prettifyDate(mMovie.getDate()));
 
         //Loading backdrop images
@@ -175,7 +178,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                 .into(mBackdropImageView);
 
         //Loading poster images
-        if(mMovie.getPosterBytes() != null) {
+        if (mMovie.getPosterBytes() != null) {
             Glide.with(getApplicationContext())
                     .load(mMovie.getPosterBytes())
                     .centerCrop()
@@ -193,7 +196,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                     .into(mPosterImageView);
         }
 
-        if(!NetworkUtils.hasNetwork(mContext)) {
+        if (!NetworkUtils.hasNetwork(mContext)) {
             (findViewById(R.id.tagline_tv)).setVisibility(View.GONE);
             (findViewById(R.id.similar_label_tv)).setVisibility(View.GONE);
             (findViewById(R.id.cast_label_tv)).setVisibility(View.GONE);
@@ -210,7 +213,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
             (findViewById(R.id.trailer_label_tv)).setVisibility(View.GONE);
             (findViewById(R.id.reviews_label_tv)).setVisibility(View.GONE);
         } else {
-            //TODO Add review, genres and similar movies
+            //TODO Add similar movies
             fetchCredits();
             fetchMoreDetails();
 
@@ -226,16 +229,46 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
             mGenreAdapter = new GenresRecyclerViewAdapter(mContext, mGenres);
             mGenresRecyclerView.setAdapter(new ScaleInAnimationAdapter(mGenreAdapter));
 
+            mSimilarMoviesRecyclerView.setLayoutManager(new LinearLayoutManager(DetailsActivity.this, RecyclerView.HORIZONTAL, false));
+            mSimilarMoviesAdapter = new MovieRecyclerViewAdapter(mContext, mSimilarMovies, (position, posterImageView) -> CookieBar.build(DetailsActivity.this)
+                    .setBackgroundColor(android.R.color.holo_green_dark)
+                    .setTitle(mSimilarMovies.get(position).getTitle())
+                    .setMessage("Rating:" + mSimilarMovies.get(position).getRating() + "\nRelease " + mSimilarMovies.get(position).getDate())
+                    .show());
+            mSimilarMoviesRecyclerView.setAdapter(new ScaleInAnimationAdapter(mSimilarMoviesAdapter));
+
             fetchDetails(mMovie.getId(), TRAILER_DETAILS_TYPE);
             fetchDetails(mMovie.getId(), REVIEW_DETAILS_TYPE);
+            fetchSimilarMovies(mMovie.getId());
         }
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             startPostponedEnterTransition();
         }
     }
 
     //TODO Fetch Similar movies
+    private void fetchSimilarMovies(int id) {
+        RetrofitAPI retrofitAPI = NetworkUtils.getCacheEnabledRetrofit(mContext).create(RetrofitAPI.class);
+        Call<TMDBResponse> similarMoviesCall = retrofitAPI.getSimilarMovies(id, BuildConfig.TMDB_API_TOKEN, "en-US");
+        similarMoviesCall.enqueue(new Callback<TMDBResponse>() {
+            @Override
+            public void onResponse(Call<TMDBResponse> call, Response<TMDBResponse> response) {
+                if (response.body() != null && response.body().getResults() != null && response.body().getResults().size() != 0) {
+                    mSimilarMovies.addAll(response.body().getResults());
+                    mSimilarMoviesAdapter.notifyDataSetChanged();
+                } else {
+                    (findViewById(R.id.similar_label_tv)).setVisibility(View.GONE);
+                    mSimilarMoviesRecyclerView.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<TMDBResponse> call, Throwable t) {
+                //DO NOTHING
+            }
+        });
+    }
 
     private void fetchDetails(int movieId, int detailsType) {
         RetrofitAPI retrofitAPI = NetworkUtils.getCacheEnabledRetrofit(getApplicationContext()).create(RetrofitAPI.class);
@@ -249,10 +282,10 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                     @Override
                     public void onResponse(Call<TMDBTrailerResponse> call, Response<TMDBTrailerResponse> response) {
                         TMDBTrailerResponse tmdbTrailerResponse = response.body();
-                        if(tmdbTrailerResponse != null && tmdbTrailerResponse.getResults().size() != 0) {
+                        if (tmdbTrailerResponse != null && tmdbTrailerResponse.getResults().size() != 0) {
                             mTrailerTitles.clear();
                             mTrailerPaths.clear();
-                            for(Trailer trailer : tmdbTrailerResponse.getResults()) {
+                            for (Trailer trailer : tmdbTrailerResponse.getResults()) {
                                 mTrailerTitles.add(trailer.getName());
                                 mTrailerPaths.add(trailer.getKey());
                             }
@@ -265,12 +298,12 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
 
                     @Override
                     public void onFailure(Call<TMDBTrailerResponse> call, Throwable t) {
-
+                        //DO NOTHING
                     }
                 });
                 break;
 
-                //TODO
+            //TODO
             case REVIEW_DETAILS_TYPE:
                 mReviewsLabel0.setVisibility(View.GONE);
                 mReviewRecyclerView.setVisibility(View.GONE);
@@ -279,10 +312,10 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                     @Override
                     public void onResponse(Call<TMDBReviewResponse> call, Response<TMDBReviewResponse> response) {
                         TMDBReviewResponse tmdbReviewResponse = response.body();
-                        if(tmdbReviewResponse != null && tmdbReviewResponse.getResults().size() != 0) {
+                        if (tmdbReviewResponse != null && tmdbReviewResponse.getResults().size() != 0) {
                             mReviewAuthors.clear();
                             mReviewContents.clear();
-                            for(Review review : tmdbReviewResponse.getResults()) {
+                            for (Review review : tmdbReviewResponse.getResults()) {
                                 mReviewAuthors.add(review.getAuthor());
                                 mReviewContents.add(review.getContent());
                             }
@@ -307,11 +340,11 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
 
         final ArrayList<Cast> castArrayList = new ArrayList<>();
         final CastRecyclerViewAdapter mCastAdapter = new CastRecyclerViewAdapter(this, castArrayList, actorName -> {
-            try{
+            try {
                 Uri uri = Uri.parse("https:www.google.com/search?q=" + actorName + " movies");
                 Intent actorMoviesIntent = new Intent(Intent.ACTION_VIEW, uri);
                 startActivity(actorMoviesIntent);
-            }catch (Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         });
@@ -326,7 +359,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
 
                 //Get cast info
                 castArrayList.clear();
-                if(creditsResponse != null && creditsResponse.getCast().size() != 0) {
+                if (creditsResponse != null && creditsResponse.getCast().size() != 0) {
                     castArrayList.addAll(creditsResponse.getCast());
                     mCastAdapter.notifyDataSetChanged();
                 } else {
@@ -335,9 +368,9 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                 }
 
                 //GEt director info
-                if(creditsResponse != null) {
-                    for(Crew crew : creditsResponse.getCrew()) {
-                        if(crew.getJob().equals("Director")) {
+                if (creditsResponse != null) {
+                    for (Crew crew : creditsResponse.getCrew()) {
+                        if (crew.getJob().equals("Director")) {
                             mDirectorTextView.setText(crew.getName());
                             break;
                         }
@@ -361,10 +394,10 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
             public void onResponse(Call<TMDBDetailsResponse> call, Response<TMDBDetailsResponse> response) {
                 final TMDBDetailsResponse tmdbDetailsResponse = response.body();
                 String tagline = null;
-                if(tmdbDetailsResponse != null) {
+                if (tmdbDetailsResponse != null) {
                     tagline = tmdbDetailsResponse.getTagline();
                 }
-                if(tagline != null && !tagline.equals("")) {
+                if (tagline != null && !tagline.equals("")) {
                     mTaglineTextView.setText(tagline);
                 } else {
                     mTaglineTextView.setVisibility(View.GONE);
@@ -374,9 +407,9 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                 mMinutesTextView.setText(String.valueOf(tmdbDetailsResponse.getRuntime()));
                 mImdbButton.setOnClickListener(view -> {
                     String imdbId = tmdbDetailsResponse.getImdbId();
-                    try{
+                    try {
                         Uri uri;
-                        if(imdbId != null && !imdbId.equals(""))
+                        if (imdbId != null && !imdbId.equals(""))
                             uri = Uri.parse("http://www.imdb.com/title/" + imdbId + "/");
                         else {
                             Toast.makeText(mContext, "Movie is'nt there on IMDB. Here is a Google search for it instead!", Toast.LENGTH_LONG).show();
@@ -390,7 +423,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                 });
 
                 //Fetching GENRES details
-                if(tmdbDetailsResponse.getGenres() != null && tmdbDetailsResponse.getGenres().size() != 0) {
+                if (tmdbDetailsResponse.getGenres() != null && tmdbDetailsResponse.getGenres().size() != 0) {
                     mGenres.clear();
                     mGenres.addAll(tmdbDetailsResponse.getGenres());
                     mGenreAdapter.notifyDataSetChanged();
@@ -409,7 +442,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
 
     @Override
     public void onItemClick(String stringUrlTrailerClicked) {
-        Uri youtubeUri  = Uri.parse("https://www.youtube.com//watch?v=" + stringUrlTrailerClicked);
+        Uri youtubeUri = Uri.parse("https://www.youtube.com//watch?v=" + stringUrlTrailerClicked);
         Intent openYouTube = new Intent(Intent.ACTION_VIEW, youtubeUri);
         startActivity(openYouTube);
     }
@@ -418,7 +451,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
     private String prettifyDate(String jsonDate) {
         DateFormat sourceDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date date = null;
-        try{
+        try {
             date = sourceDateFormat.parse(jsonDate);
         } catch (ParseException e) {
             e.printStackTrace();

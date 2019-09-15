@@ -29,14 +29,17 @@ public class TMDBResponse implements Parcelable {
     @SerializedName("total_pages")
     private int totalPages;
 
-    public TMDBResponse() {
-    }
+    public TMDBResponse() { }
 
     protected TMDBResponse(Parcel in) {
         this.page = in.readInt();
         this.results = in.createTypedArrayList(Movie.CREATOR);
         this.totalResults = in.readInt();
         this.totalPages = in.readInt();
+    }
+
+    public static Creator<TMDBResponse> getCreator() {
+        return CREATOR;
     }
 
     public int getPage() {
