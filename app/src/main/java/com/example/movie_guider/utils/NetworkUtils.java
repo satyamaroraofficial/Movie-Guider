@@ -35,6 +35,7 @@ public class NetworkUtils {
                     return chain.proceed(request);
                 })
                 .build();
+
         return new Retrofit.Builder()
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(okHttpClient)

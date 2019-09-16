@@ -1,5 +1,7 @@
 package com.example.movie_guider.ui;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
@@ -8,6 +10,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,6 +26,10 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.Request;
+import com.bumptech.glide.request.target.SizeReadyCallback;
+import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.request.transition.Transition;
 import com.example.movie_guider.BuildConfig;
 import com.example.movie_guider.R;
 import com.example.movie_guider.adapters.CastRecyclerViewAdapter;
@@ -28,6 +37,7 @@ import com.example.movie_guider.adapters.GenresRecyclerViewAdapter;
 import com.example.movie_guider.adapters.MovieRecyclerViewAdapter;
 import com.example.movie_guider.adapters.ReviewRecyclerViewAdapter;
 import com.example.movie_guider.adapters.TrailerRecyclerViewAdapter;
+import com.example.movie_guider.data.RealmDataSource;
 import com.example.movie_guider.model.Cast;
 import com.example.movie_guider.model.Crew;
 import com.example.movie_guider.model.GenresItem;
@@ -48,6 +58,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.aviran.cookiebar2.CookieBar;
 
+import java.io.ByteArrayOutputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -111,22 +122,22 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
     @BindView(R.id.similar_movies_rv)
     RecyclerView mSimilarMoviesRecyclerView;
 
-    //TODO Add Adapters
     private TrailerRecyclerViewAdapter mTrailerAdapter;
     private MovieRecyclerViewAdapter mSimilarMoviesAdapter;
     private GenresRecyclerViewAdapter mGenreAdapter;
     private ReviewRecyclerViewAdapter mReviewAdapter;
 
-    //TODO Add ArrayLists
     private ArrayList<String> mTrailerTitles = new ArrayList<>();
     private ArrayList<String> mTrailerPaths = new ArrayList<>();
     private ArrayList<GenresItem> mGenres = new ArrayList<>();
     private ArrayList<Movie> mSimilarMovies = new ArrayList<>();
     private ArrayList<String> mReviewAuthors = new ArrayList<>();
     private ArrayList<String> mReviewContents = new ArrayList<>();
+
     private Context mContext;
     private byte[] imageBytes;
-    //TODO Add REALME DATA SOURCES
+    //Adding REALME DATA SOURCES
+    private RealmDataSource dataSource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,7 +156,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
         }
 
 //        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mMovie = getIntent().getParcelableExtra("movie");
         collapsingToolbarLayout.setTitle(mMovie.getTitle());
         collapsingToolbarLayout.setExpandedTitleColor(getResources().getColor(android.R.color.black));
@@ -157,11 +168,14 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                 mPosterImageView.setVisibility(View.VISIBLE);
         });
 
+        dataSource = new RealmDataSource();
+        dataSource.open();
 
         mRatingTextView.setText(mMovie.getRating()); //Setting rating
         mTitleTextView.setText(mMovie.getTitle()); //Setting title
         mPlotTextView.setText(mMovie.getPlot()); //Setting plot
-        //TODO Add favourite button method
+        //Adding favButton method
+        favButtonInit(mMovie.getId());
 
         //Setting release date
         if (mMovie.getDate() != null && !mMovie.getDate().equals(""))
@@ -213,7 +227,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
             (findViewById(R.id.trailer_label_tv)).setVisibility(View.GONE);
             (findViewById(R.id.reviews_label_tv)).setVisibility(View.GONE);
         } else {
-            //TODO Add similar movies
+
             fetchCredits();
             fetchMoreDetails();
 
@@ -247,7 +261,7 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
         }
     }
 
-    //TODO Fetch Similar movies
+    //Fetching similar movies
     private void fetchSimilarMovies(int id) {
         RetrofitAPI retrofitAPI = NetworkUtils.getCacheEnabledRetrofit(mContext).create(RetrofitAPI.class);
         Call<TMDBResponse> similarMoviesCall = retrofitAPI.getSimilarMovies(id, BuildConfig.TMDB_API_TOKEN, "en-US");
@@ -303,7 +317,6 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
                 });
                 break;
 
-            //TODO
             case REVIEW_DETAILS_TYPE:
                 mReviewsLabel0.setVisibility(View.GONE);
                 mReviewRecyclerView.setVisibility(View.GONE);
@@ -461,7 +474,99 @@ public class DetailsActivity extends AppCompatActivity implements TrailerRecycle
         return dateStr;
     }
 
+    //ADDING FAV BUTTON FUNCTIONALITY
+    private void favButtonInit(final int id) {
+        Movie checkedMovie = dataSource.findMovieWithId(id);
+        if (checkedMovie == null)
+            mFavoriteButton.setImageResource(R.drawable.ic_favorite_border);
+        else
+            mFavoriteButton.setImageResource(R.drawable.ic_favorite);
+        mFavoriteButton.setOnClickListener(view -> {
+            Movie transactedMovie = dataSource.findMovieWithId(id);
+            if (transactedMovie == null) {
+                tempMovie = mMovie;
+                Glide.with(mContext)
+                        .load(tempMovie.getPosterBytes())
+                        .centerCrop()
+                        .into(new Target<Drawable>() {
+                            @Override
+                            public void onLoadStarted(@Nullable Drawable placeholder) {
+                            }
 
+                            @Override
+                            public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                            }
+
+                            @Override
+                            public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                                Bitmap bitmap = ((BitmapDrawable) resource).getBitmap();
+                                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                                imageBytes = stream.toByteArray();
+                            }
+
+                            @Override
+                            public void onLoadCleared(@Nullable Drawable placeholder) {
+                            }
+
+                            @Override
+                            public void getSize(@NonNull SizeReadyCallback cb) {
+                            }
+
+                            @Override
+                            public void removeCallback(@NonNull SizeReadyCallback cb) {
+                            }
+
+                            @Nullable
+                            @Override
+                            public Request getRequest() {
+                                return null;
+                            }
+
+                            @Override
+                            public void setRequest(@Nullable Request request) {
+                            }
+
+                            @Override
+                            public void onStart() {
+                            }
+
+                            @Override
+                            public void onStop() {
+                            }
+
+                            @Override
+                            public void onDestroy() {
+                            }
+                        });
+                tempMovie.setPosterBytes(imageBytes);
+                dataSource.addMovieToFavs(tempMovie);
+                mFavoriteButton.setImageResource(R.drawable.ic_favorite);
+                CookieBar.build(DetailsActivity.this)
+                        .setBackgroundColor(android.R.color.holo_blue_dark)
+                        .setTitle("Movie added to favourites👍")
+                        .setMessage("You can see the details, even when offline, in your favourites.")
+                        .show();
+            } else {
+                CookieBar.build(DetailsActivity.this)
+                        .setBackgroundColor(android.R.color.holo_red_dark)
+                        .setTitle("Movie removed from favourites👍")
+                        .setMessage("But did you really have to? :-(")
+                        .show();
+                dataSource.deleteMovieFromFavs(transactedMovie);
+                mFavoriteButton.setImageResource(R.drawable.ic_favorite_border);
+            }
+        });
+    }
+
+    //TODO ADDING HOME BUTTON FUNCTIONALITY
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        dataSource.close();
+    }
 }
 
 

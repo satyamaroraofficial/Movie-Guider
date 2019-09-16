@@ -5,8 +5,11 @@ import android.os.Parcelable;
 
 import com.google.gson.annotations.SerializedName;
 
-//TODO: Add REALM DATABASE
-public class Movie implements Parcelable {
+import io.realm.RealmObject;
+import io.realm.annotations.PrimaryKey;
+
+//Also Adding REALM DATABASE
+public class Movie extends RealmObject implements Parcelable {
 
     public static final Creator<Movie> CREATOR = new Creator<Movie>() {
         @Override
@@ -20,7 +23,7 @@ public class Movie implements Parcelable {
         }
     };
 
-//    @PrimaryKey
+    @PrimaryKey
     @SerializedName("id")
     private int id;
     @SerializedName("poster_path")

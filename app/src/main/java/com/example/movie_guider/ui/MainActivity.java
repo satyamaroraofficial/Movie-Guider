@@ -27,6 +27,7 @@ import com.arlib.floatingsearchview.suggestions.model.SearchSuggestion;
 import com.example.movie_guider.BuildConfig;
 import com.example.movie_guider.R;
 import com.example.movie_guider.adapters.MovieRecyclerViewAdapter;
+import com.example.movie_guider.data.RealmDataSource;
 import com.example.movie_guider.model.Movie;
 import com.example.movie_guider.model.MovieRecyclerView;
 import com.example.movie_guider.model.TMDBResponse;
@@ -60,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
     private MovieRecyclerViewAdapter mAdapter;
     private ArrayList<Movie> movieArrayList = new ArrayList<>();
     private Context mContext;
+    private RealmDataSource dataSource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,25 +69,26 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.colorPrimary));
         }
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Slide slide = new Slide(Gravity.LEFT);
             getWindow().setExitTransition(slide);
         }
         mContext = getApplicationContext();
         CookieBar.build(MainActivity.this)
                 .setLayoutGravity(Gravity.BOTTOM)
-                .setBackgroundColor(R.color.colorAccent)
-                .setTitleColor(R.color.colorPrimary)
+                .setBackgroundColor(R.color.colorPrimary)
+                .setTitleColor(R.color.light_gray)
                 .setTitle("App Developed By Satyam Arora")
                 .show();
 
-        //TODO REALM DATABASE
+        dataSource = new RealmDataSource();
+        dataSource.open();
 
         int columns = 2;
-        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
             columns = 4;
         GridLayoutManager gridLayoutManager = new GridLayoutManager(mContext, columns);
         mRecyclerView.setLayoutManager(gridLayoutManager);
@@ -115,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
                     break;
                 case R.id.action_favorites:
                     mRecyclerView.smoothScrollToPosition(0);
-                    //TODO
+                    fetchFavs();
                     break;
                 default:
                     fetchMovies(POPULAR_TASK, null);
@@ -138,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         searchView.setOnSearchListener(new FloatingSearchView.OnSearchListener() {
             @Override
             public void onSuggestionClicked(SearchSuggestion searchSuggestion) {
-                //NOTHING
+                //TODO
             }
 
             @Override
@@ -190,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
             public void onResponse(Call<TMDBResponse> call, Response<TMDBResponse> response) {
                 TMDBResponse tmdbResponse = response.body();
                 movieArrayList.clear();
-                if(tmdbResponse != null) {
+                if (tmdbResponse != null) {
                     movieArrayList.addAll(tmdbResponse.getResults());
                     mAdapter.notifyDataSetChanged();
                 }
@@ -207,7 +210,16 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         });
     }
 
-    //TODO fetching favourites
+    //fetching favourites
+    private void fetchFavs() {
+        mRecyclerView.setVisibility(View.INVISIBLE);
+        mProgressBar.setVisibility(View.VISIBLE);
+        movieArrayList.clear();
+        movieArrayList.addAll(dataSource.getAllFavMovies());
+        mAdapter.notifyDataSetChanged();
+        mRecyclerView.setVisibility(View.VISIBLE);
+        mProgressBar.setVisibility(View.INVISIBLE);
+    }
 
     @Override
     public void onItemClick(int position, ImageView posterImageView) {
@@ -233,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
             if (matches != null) {
                 if (!matches.isEmpty()) {
                     String query = matches.get(0);
-                    //TODO
+                    fetchMovies(SEARCH_TASK, query);
                     Toast.makeText(this, "Searching for " + query + "...", Toast.LENGTH_LONG).show();
                 }
             }
@@ -250,4 +262,9 @@ public class MainActivity extends AppCompatActivity implements MovieRecyclerView
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        dataSource.close();
+    }
 }
