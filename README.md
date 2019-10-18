@@ -3,8 +3,7 @@ A feature-rich movie guide app, that lets you discover movies from TMDb.
 
 
 ## Designs
-<img src="design/screen0.png" width="300"><img src="design/screen1.png" width="300">
-<img src="design/screen2.png" width="300">
+<img src="design/screen1.png" width="300"><img src="design/screen2.png" width="300">
 <img src="design/screen3.png" width="300">
 <img src="design/screen4.png" width="300">
 <img src="design/screen5.png" width="300">
